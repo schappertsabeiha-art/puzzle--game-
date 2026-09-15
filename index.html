@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M仔的花语奇遇-中国-东盟生态守护之旅</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #ffffff;
+            overflow: hidden; user-select: none;
+        }
+
+        #main-menu-screen { display: flex; flex-direction: column; width: 100%; height: 100%; background-color: #ffffff; }
+        
+        #puzzle-science-screen { 
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            z-index: 100; background-repeat: no-repeat; background-position: center; background-size: cover;
+        }
+
+        /* 首页导航 */
+        .game-header {
+            width: 100%; height: 56px; background-color: #ffffff; padding: 0 24px; 
+            display: flex; align-items: center; justify-content: space-between; 
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); z-index: 10;
+        }
+        .title-container { display: flex; align-items: center; }
+        @keyframes floatAnimation { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-4px); } }
+        .m-boy-logo { width: 56px; height: auto; margin-right: 10px; animation: floatAnimation 2.5s infinite ease-in-out; }
+        .game-title { color: #047857; font-size: 21px; font-weight: bold; margin: 0; letter-spacing: 1px; }
+        .rules-bubble { background-color: #fffbeb; border: 1.5px solid #fbbf24; padding: 4px 14px; border-radius: 20px; color: #b45309; font-size: 13px; font-weight: bold; }
+        
+        .game-body { flex: 1; display: flex; align-items: center; justify-content: center; background-color: #ffffff; padding: 0; }
+        .map-wrapper { 
+            position: relative; 
+            width: min(99vw, calc((100vh - 60px) * 1.777)); 
+            height: min(calc(100vh - 60px), calc(99vw / 1.777)); 
+            aspect-ratio: 16 / 9; background-color: #ffffff;
+        }
+        .map-bg-img { width: 100%; height: 100%; object-fit: fill; display: block; }
+
+        @keyframes borderGlow { 0%, 100% { box-shadow: 0 0 6px #fbbf24, inset 0 0 6px #fbbf24; opacity: 0.75; } 50% { box-shadow: 0 0 25px #f59e0b, inset 0 0 15px #f59e0b; opacity: 1; } }
+        .badge-hotspot { 
+            position: absolute; background: transparent; border-radius: 50%; 
+            cursor: pointer; transform: translate(-50%, -50%); 
+            border: 2px solid transparent; transition: all 0.25s ease; 
+        }
+        .badge-hotspot:hover { border: 3px solid #fbbf24; animation: borderGlow 1.2s infinite ease-in-out; transform: translate(-50%, -50%) scale(1.04); }
+
+        /* 关卡舞台 */
+        .stage-container {
+            position: relative; width: 100%; height: 100%; 
+            display: flex; align-items: center; justify-content: flex-start;
+            padding: 15px 24px; gap: 20px;
+        }
+
+        .top-nav-bar { position: absolute; top: 18px; left: 24px; z-index: 50; }
+        .back-btn { 
+            background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(12px);
+            color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.35); 
+            padding: 7px 18px; border-radius: 20px; font-weight: bold; font-size: 13px; 
+            cursor: pointer; transition: all 0.25s ease; display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .back-btn:hover { background: rgba(239, 68, 68, 0.85); border-color: transparent; transform: scale(1.04); }
+
+        /* 左侧：5 张独立 PNG 卡片流 */
+        .left-cards-column {
+            width: 340px; height: 86vh;
+            margin-top: 38px;
+            display: flex; flex-direction: column; gap: 16px;
+            z-index: 10; overflow-y: auto; scrollbar-width: none; padding: 4px;
+        }
+        .left-cards-column::-webkit-scrollbar { display: none; }
+
+        .info-card-item {
+            width: 100%; background: rgba(14, 30, 56, 0.78); backdrop-filter: blur(20px);
+            border: 1.5px solid rgba(255, 255, 255, 0.2); border-radius: 18px;
+            overflow: hidden; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+            flex-shrink: 0; transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .info-card-item:hover { border-color: rgba(251, 191, 36, 0.5); transform: translateY(-2px); }
+        .info-card-item img { width: 100%; height: auto; object-fit: contain; display: block; }
+
+        .puzzle-stage-area { flex: 1; height: 92vh; position: relative; }
+
+        #dashed-box {
+            position: absolute; left: 7.5%; top: 9.5%; width: 745px; height: 730px;
+            border: 2px dashed #fbbf24; border-radius: 28px;
+            background: rgba(251, 191, 36, 0.02); box-shadow: 0 0 25px rgba(245, 158, 11, 0.15), inset 0 0 15px rgba(245, 158, 11, 0.03);
+            pointer-events: none; z-index: 5; transition: all 0.25s ease;
+        }
+        #dashed-box.drag-hover { border-color: #34d399; background: rgba(52, 211, 153, 0.08); box-shadow: 0 0 45px rgba(52, 211, 153, 0.35); }
+
+        #inner-puzzle-mount { position: absolute; left: 25%; top: 14%; width: 540px; height: 540px; pointer-events: none; z-index: 15; }
+
+        .puzzle-piece-node {
+            position: absolute; cursor: grab; user-select: none; transform-origin: center center;
+            display: flex; align-items: center; justify-content: center; z-index: 20;
+            filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55)); transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .puzzle-piece-node:active { cursor: grabbing; transform: scale(1.04) !important; z-index: 999 !important; filter: drop-shadow(0 12px 24px rgba(251, 191, 36, 0.85)); }
+        .puzzle-piece-node img { width: 100%; height: 100%; object-fit: fill; pointer-events: none; display: block; }
+        .puzzle-piece-node.locked { cursor: default; pointer-events: none; z-index: 16; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35)); }
+
+        /* 通关弹窗与视频播放器 */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 10, 20, 0.88); backdrop-filter: blur(12px);
+            display: none; align-items: center; justify-content: center; z-index: 200; opacity: 0; transition: opacity 0.4s ease;
+        }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        .complete-card {
+            background: linear-gradient(145deg, rgba(23, 42, 77, 0.95), rgba(10, 24, 48, 0.98));
+            border: 2px solid #fbbf24; box-shadow: 0 0 60px rgba(245, 158, 11, 0.4);
+            border-radius: 28px; padding: 25px 40px; display: flex; flex-direction: column; align-items: center;
+            transform: scale(0.8); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-overlay.show .complete-card { transform: scale(1); }
+        .complete-preview-img { width: 250px; height: 250px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); object-fit: contain; border: 2px solid rgba(255,255,255,0.25); }
+        .complete-title { color: #fbbf24; font-size: 24px; font-weight: 900; margin: 16px 0 12px 0; letter-spacing: 2px; text-shadow: 0 2px 10px rgba(245, 158, 11, 0.5); }
+        .video-action-btn {
+            background: linear-gradient(135deg, #f59e0b, #d97706); color: #ffffff; font-size: 15px; font-weight: bold;
+            border: none; border-radius: 30px; padding: 10px 30px; cursor: pointer; box-shadow: 0 6px 20px rgba(217, 119, 6, 0.5);
+            display: flex; align-items: center; gap: 8px; transition: all 0.25s ease;
+        }
+        .video-action-btn:hover { transform: scale(1.06); box-shadow: 0 8px 25px rgba(245, 158, 11, 0.8); }
+
+        #video-screen { 
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background-color: #000; z-index: 9999; align-items: center; justify-content: center; 
+        }
+        .video-player { width: 100vw; height: 100vh; object-fit: contain; background-color: #000; }
+        .video-close-btn { 
+            position: absolute; top: 25px; right: 25px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); 
+            border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; padding: 10px 22px; border-radius: 30px; font-size: 14px; font-weight: bold; cursor: pointer; z-index: 10000; transition: all 0.25s ease;
+        }
+        .video-close-btn:hover { background: rgba(239, 68, 68, 0.85); transform: scale(1.05); }
+
+        #video-loading-tip {
+            position: absolute; color: #fbbf24; font-size: 16px; font-weight: bold;
+            display: none; align-items: center; gap: 10px; z-index: 9998;
+            background: rgba(0, 0, 0, 0.75); padding: 12px 24px; border-radius: 30px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-spinner {
+            width: 20px; height: 20px; border: 3px solid rgba(251,191,36,0.3);
+            border-top: 3px solid #fbbf24; border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. 关卡大厅 -->
+    <div id="main-menu-screen">
+        <div class="game-header">
+            <div class="title-container">
+                <img src="earth_m_boy.png" alt="地球M仔" class="m-boy-logo" onerror="this.style.display='none'">
+                <h1 class="game-title">M仔的花语奇遇-中国-东盟生态守护之旅</h1>
+            </div>
+            <div class="rules-bubble">✨ 点击下方生态徽章，开启生态拼图大挑战！</div>
+        </div>
+        <div class="game-body">
+            <div class="map-wrapper">
+                <img src="main_bg.jpg" alt="东盟生态选关主画面" class="map-bg-img">
+                <div class="badge-hotspot" style="top: 18.1%; left: 11.9%; width: 12.5%; height: 23%;" onclick="enterLevel('文莱')"></div>
+                <div class="badge-hotspot" style="top: 18.0%; left: 28.9%; width: 12.5%; height: 23%;" onclick="enterLevel('柬埔寨')"></div>
+                <div class="badge-hotspot" style="top: 17.4%; left: 45.5%; width: 12.5%; height: 23%;" onclick="enterLevel('广西')"></div>
+                <div class="badge-hotspot" style="top: 17.7%; left: 61.6%; width: 12.5%; height: 23%;" onclick="enterLevel('印尼')"></div>
+                <div class="badge-hotspot" style="top: 48.0%; left: 11.5%; width: 12.5%; height: 23%;" onclick="enterLevel('老挝')"></div>
+                <div class="badge-hotspot" style="top: 47.0%; left: 28.9%; width: 12.5%; height: 23%;" onclick="enterLevel('马来西亚')"></div>
+                <div class="badge-hotspot" style="top: 48.7%; left: 45.8%; width: 12.5%; height: 23%;" onclick="enterLevel('缅甸')"></div>
+                <div class="badge-hotspot" style="top: 49.4%; left: 62.2%; width: 12.5%; height: 23%;" onclick="enterLevel('菲律宾')"></div>
+                <div class="badge-hotspot" style="top: 79.1%; left: 12.9%; width: 12.5%; height: 23%;" onclick="enterLevel('新加坡')"></div>
+                <div class="badge-hotspot" style="top: 79.5%; left: 28.9%; width: 12.5%; height: 23%;" onclick="enterLevel('泰国')"></div>
+                <div class="badge-hotspot" style="top: 79.6%; left: 46.7%; width: 12.5%; height: 23%;" onclick="enterLevel('东帝汶')"></div>
+                <div class="badge-hotspot" style="top: 79.8%; left: 63.1%; width: 12.5%; height: 23%;" onclick="enterLevel('越南')"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 【自由拼图与科普关卡】 -->
+    <div id="puzzle-science-screen">
+        <div class="top-nav-bar"><button class="back-btn" onclick="backToMenu()">◀ 返回 花卉图</button></div>
+
+        <div class="stage-container">
+            <!-- 左侧：5 张独立 PNG 卡片 -->
+            <div class="left-cards-column">
+                <div class="info-card-item"><img id="card-ref-img" src="" alt="拼图原图参考" loading="lazy"></div>
+                <div class="info-card-item"><img id="card-elem-cn-img" src="" alt="拼图元素(中文)" loading="lazy"></div>
+                <div class="info-card-item"><img id="card-elem-en-img" src="" alt="拼图元素(英文)" loading="lazy"></div>
+                <div class="info-card-item"><img id="card-story-cn-img" src="" alt="中文故事" loading="lazy"></div>
+                <div class="info-card-item"><img id="card-story-en-img" src="" alt="英文故事" loading="lazy"></div>
+            </div>
+
+            <!-- 右侧：全景自由工作台 -->
+            <div class="puzzle-stage-area" id="stage-area" ondragover="handleStageDragOver(event)" ondragleave="handleStageDragLeave(event)" ondrop="handleStageDrop(event)">
+                <div id="dashed-box"></div>
+                <div id="inner-puzzle-mount"></div>
+            </div>
+        </div>
+
+        <!-- 3. 【通关结算弹窗】 -->
+        <div class="modal-overlay" id="victory-modal">
+            <div class="complete-card">
+                <img id="victory-preview-img" class="complete-preview-img" src="" alt="完整拼图">
+                <div class="complete-title">✨ 拼图完成！</div>
+                <button class="video-action-btn" onclick="startVideoPlayback()">▶ 观看专属生态科普视频</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 全屏视频播放界面（默认纯静音） -->
+    <div id="video-screen">
+        <button class="video-close-btn" onclick="closeVideoWindow()">✖ 关闭视频</button>
+        <div id="video-loading-tip"><div class="loading-spinner"></div> 生态科普视频加载中...</div>
+        <video id="game-video" class="video-player" controls playsinline muted>
+            <!-- 动态注入播放源，避免静态资源驻留缓存 -->
+        </video>
+    </div>
+
+    <script>
+        const BASE_MOUNT_SIZE = 540;
+
+        const defaultScatterSlots = [
+            { initLeft: 71.5, initTop: 4.0 },
+            { initLeft: 71.5, initTop: 23.0 },
+            { initLeft: 71.5, initTop: 42.0 },
+            { initLeft: 71.5, initTop: 61.0 },
+            { initLeft: 71.5, initTop: 80.0 },
+            { initLeft: 85.5, initTop: 10.0 },
+            { initLeft: 85.5, initTop: 30.0 },
+            { initLeft: 85.5, initTop: 50.0 },
+            { initLeft: 85.5, initTop: 70.0 }
+        ];
+
+        /*
+           =========================================================
+           🎯 全 12 关卡完整配置字典
+           =========================================================
+        */
+        const gameData = {
+            '文莱': {
+                bgImg: '文莱-08.jpg',
+                fullPuzzleImg: 'brunei_mosque.jpg',
+                elementCnImg: 'brunei_elements_cn.png',
+                elementEnImg: 'brunei_elements_en.png',
+                storyCnImg: 'brunei_story_cn.png',
+                storyEnImg: 'brunei_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/brunei_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'brunei_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -42.14, targetTop: -5.69, targetWidth: 60.2, targetHeight: 60.78, targetRotate: 0 },
+                    { id: 1, src: 'brunei_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 0.0,    targetTop: -3.95, targetWidth: 60.2, targetHeight: 60.2,   targetRotate: 0 },
+                    { id: 3, src: 'brunei_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -50.71, targetTop: 32.06, targetWidth: 67.15, targetHeight: 65.98, targetRotate: 0 },
+                    { id: 4, src: 'brunei_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -2.43,  targetTop: 38.30, targetWidth: 60.2, targetHeight: 49.62, targetRotate: 0 },
+                    { id: 5, src: 'brunei_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 36.59,  targetTop: 38.08, targetWidth: 60.2, targetHeight: 57.89, targetRotate: 0 },
+                    { id: 8, src: 'brunei_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 38.55,  targetTop: 71.65, targetWidth: 54.99, targetHeight: 58.46, targetRotate: 0 },
+                    { id: 7, src: 'brunei_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -2.20,   targetTop: 70.95, targetWidth: 59.62, targetHeight: 59.62, targetRotate: 0 },
+                    { id: 6, src: 'brunei_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -41.90, targetTop: 77.09, targetWidth: 65.98, targetHeight: 49.62, targetRotate: 0 },
+                    { id: 2, src: 'brunei_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 37.16,  targetTop: -4.06, targetWidth: 57.89, targetHeight: 60.2,   targetRotate: 0 }
+                ]
+            },
+            '印尼': {
+                bgImg: 'indonesia_bg.jpg',
+                fullPuzzleImg: 'indonesia_full.jpg',
+                elementCnImg: 'indonesia_elements_cn.png',
+                elementEnImg: 'indonesia_elements_en.png',
+                storyCnImg: 'indonesia_story_cn.png',
+                storyEnImg: 'indonesia_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/indonesia_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'indonesia_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -43.25, targetTop: -11.25, targetWidth: 63.8, targetHeight: 63.6, targetRotate: 0 },
+                    { id: 1, src: 'indonesia_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -5.56,  targetTop: -7.11,  targetWidth: 65.2, targetHeight: 68.9, targetRotate: 0 },
+                    { id: 2, src: 'indonesia_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 32.89,  targetTop: -6.66,  targetWidth: 59.2, targetHeight: 64.6, targetRotate: 0 },
+                    { id: 3, src: 'indonesia_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -46.64, targetTop: 25.95,  targetWidth: 68.3, targetHeight: 68.5, targetRotate: 0 },
+                    { id: 4, src: 'indonesia_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -10.22, targetTop: 34.59,  targetWidth: 69.7, targetHeight: 58.8, targetRotate: 0 },
+                    { id: 5, src: 'indonesia_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 25.84,  targetTop: 32.51,  targetWidth: 67.3, targetHeight: 59.8, targetRotate: 0 },
+                    { id: 6, src: 'indonesia_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -50.61, targetTop: 67.28,  targetWidth: 78.9, targetHeight: 61.2, targetRotate: 0 },
+                    { id: 7, src: 'indonesia_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -10.91, targetTop: 72.43,  targetWidth: 63.0, targetHeight: 56.2, targetRotate: 0 },
+                    { id: 8, src: 'indonesia_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 25.95,  targetTop: 69.25,  targetWidth: 68.3, targetHeight: 63.6, targetRotate: 0 }
+                ]
+            },
+            '柬埔寨': {
+                bgImg: 'cambodia_bg.jpg',
+                fullPuzzleImg: 'cambodia_full.jpg',
+                elementCnImg: 'cambodia_elements_cn.png',
+                elementEnImg: 'cambodia_elements_en.png',
+                storyCnImg: 'cambodia_story_cn.png',
+                storyEnImg: 'cambodia_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/cambodia_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'cambodia_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -44.36, targetTop: -9.58,  targetWidth: 62.4, targetHeight: 62.4, targetRotate: 0 },
+                    { id: 1, src: 'cambodia_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -6.30,  targetTop: -10.62, targetWidth: 62.4, targetHeight: 70.5, targetRotate: 0 },
+                    { id: 2, src: 'cambodia_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 29.93,  targetTop: -10.74, targetWidth: 65.2, targetHeight: 66.4, targetRotate: 0 },
+                    { id: 3, src: 'cambodia_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -50.34, targetTop: 26.32,  targetWidth: 75.5, targetHeight: 74.7, targetRotate: 0 },
+                    { id: 4, src: 'cambodia_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -4.48,  targetTop: 34.97,  targetWidth: 64.0, targetHeight: 56.4, targetRotate: 0 },
+                    { id: 5, src: 'cambodia_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 34.17,  targetTop: 34.19,  targetWidth: 62.8, targetHeight: 61.0, targetRotate: 0 },
+                    { id: 6, src: 'cambodia_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -48.38, targetTop: 66.34,  targetWidth: 69.3, targetHeight: 65.6, targetRotate: 0 },
+                    { id: 7, src: 'cambodia_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -3.13,  targetTop: 76.87,  targetWidth: 59.2, targetHeight: 54.6, targetRotate: 0 },
+                    { id: 8, src: 'cambodia_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 29.49,  targetTop: 74.99,  targetWidth: 66.6, targetHeight: 56.6, targetRotate: 0 }
+                ]
+            },
+            '缅甸': {
+                bgImg: 'myanmar_bg.jpg',
+                fullPuzzleImg: 'myanmar_full.jpg',
+                elementCnImg: 'myanmar_elements_cn.png',
+                elementEnImg: 'myanmar_elements_en.png',
+                storyCnImg: 'myanmar_story_cn.png',
+                storyEnImg: 'myanmar_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/myanmar_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'myanmar_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -44.73, targetTop: -7.36,  targetWidth: 68.9, targetHeight: 68.7, targetRotate: 0 },
+                    { id: 1, src: 'myanmar_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -10.38, targetTop: -7.11,  targetWidth: 73.1, targetHeight: 65.4, targetRotate: 0 },
+                    { id: 2, src: 'myanmar_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 32.53,  targetTop: -4.80,  targetWidth: 57.6, targetHeight: 60.6, targetRotate: 0 },
+                    { id: 3, src: 'myanmar_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -38.86, targetTop: 23.73,  targetWidth: 62.4, targetHeight: 69.9, targetRotate: 0 },
+                    { id: 4, src: 'myanmar_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -7.62,  targetTop: 33.48,  targetWidth: 63.0, targetHeight: 59.8, targetRotate: 0 },
+                    { id: 5, src: 'myanmar_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 32.88,  targetTop: 32.90,  targetWidth: 61.0, targetHeight: 60.0, targetRotate: 0 },
+                    { id: 6, src: 'myanmar_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -44.12, targetTop: 67.27,  targetWidth: 64.4, targetHeight: 63.2, targetRotate: 0 },
+                    { id: 7, src: 'myanmar_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -4.79,  targetTop: 72.06,  targetWidth: 56.4, targetHeight: 52.5, targetRotate: 0 },
+                    { id: 8, src: 'myanmar_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 24.47,  targetTop: 64.06,  targetWidth: 68.5, targetHeight: 65.8, targetRotate: 0 }
+                ]
+            },
+            '菲律宾': {
+                bgImg: 'philippines_bg.jpg',
+                fullPuzzleImg: 'philippines_full.jpg',
+                elementCnImg: 'philippines_elements_cn.png',
+                elementEnImg: 'philippines_elements_en.png',
+                storyCnImg: 'philippines_story_cn.png',
+                storyEnImg: 'philippines_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/philippines_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'philippines_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -41.21, targetTop: -6.80,  targetWidth: 66.0, targetHeight: 66.2, targetRotate: 0 },
+                    { id: 1, src: 'philippines_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -4.63,  targetTop: -7.47,  targetWidth: 66.0, targetHeight: 69.3, targetRotate: 0 },
+                    { id: 2, src: 'philippines_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 30.32,  targetTop: -11.10, targetWidth: 69.1, targetHeight: 75.3, targetRotate: 0 },
+                    { id: 3, src: 'philippines_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -40.15, targetTop: 28.36,  targetWidth: 59.4, targetHeight: 71.1, targetRotate: 0 },
+                    { id: 4, src: 'philippines_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -5.20,  targetTop: 35.52,  targetWidth: 68.1, targetHeight: 66.9, targetRotate: 0 },
+                    { id: 5, src: 'philippines_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 39.18,  targetTop: 37.71,  targetWidth: 53.4, targetHeight: 56.2, targetRotate: 0 },
+                    { id: 6, src: 'philippines_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -40.24, targetTop: 70.43,  targetWidth: 61.6, targetHeight: 58.4, targetRotate: 0 },
+                    { id: 7, src: 'philippines_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -6.65,  targetTop: 77.80,  targetWidth: 75.1, targetHeight: 54.6, targetRotate: 0 },
+                    { id: 8, src: 'philippines_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 34.11,  targetTop: 82.20,  targetWidth: 58.2, targetHeight: 49.7, targetRotate: 0 }
+                ]
+            },
+            '新加坡': {
+                bgImg: 'singapore_bg.jpg',
+                fullPuzzleImg: 'singapore_full.jpg',
+                elementCnImg: 'singapore_elements_cn.png',
+                elementEnImg: 'singapore_elements_en.png',
+                storyCnImg: 'singapore_story_cn.png',
+                storyEnImg: 'singapore_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/singapore_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'singapore_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -45.66, targetTop: -10.13, targetWidth: 70.7, targetHeight: 70.7, targetRotate: 0 },
+                    { id: 1, src: 'singapore_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -7.41,  targetTop: -8.02,  targetWidth: 72.1, targetHeight: 71.9, targetRotate: 0 },
+                    { id: 2, src: 'singapore_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 37.71,  targetTop: -1.47,  targetWidth: 58.8, targetHeight: 65.6, targetRotate: 0 },
+                    { id: 3, src: 'singapore_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -50.35, targetTop: 31.13,  targetWidth: 76.5, targetHeight: 69.7, targetRotate: 0 },
+                    { id: 4, src: 'singapore_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -8.18,  targetTop: 36.26,  targetWidth: 75.3, targetHeight: 62.4, targetRotate: 0 },
+                    { id: 5, src: 'singapore_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 28.99,  targetTop: 31.79,  targetWidth: 90.6, targetHeight: 68.9, targetRotate: 0 },
+                    { id: 6, src: 'singapore_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -46.16, targetTop: 70.06,  targetWidth: 70.3, targetHeight: 60.2, targetRotate: 0 },
+                    { id: 7, src: 'singapore_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -7.02,  targetTop: 75.58,  targetWidth: 66.4, targetHeight: 54.2, targetRotate: 0 },
+                    { id: 8, src: 'singapore_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 27.44,  targetTop: 74.99,  targetWidth: 74.9, targetHeight: 55.0, targetRotate: 0 }
+                ]
+            },
+            '泰国': {
+                bgImg: 'thailand_bg.jpg',
+                fullPuzzleImg: 'thailand_full.jpg',
+                elementCnImg: 'thailand_elements_cn.png',
+                elementEnImg: 'thailand_elements_en.png',
+                storyCnImg: 'thailand_story_cn.png',
+                storyEnImg: 'thailand_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/thailand_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'thailand_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -44.54, targetTop: -8.10,  targetWidth: 66.6, targetHeight: 66.6, targetRotate: 0 },
+                    { id: 1, src: 'thailand_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -6.48,  targetTop: -7.10,  targetWidth: 69.7, targetHeight: 69.1, targetRotate: 0 },
+                    { id: 2, src: 'thailand_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 32.53,  targetTop: -7.76,  targetWidth: 72.3, targetHeight: 73.1, targetRotate: 0 },
+                    { id: 3, src: 'thailand_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -54.24, targetTop: 26.69,  targetWidth: 76.9, targetHeight: 74.5, targetRotate: 0 },
+                    { id: 4, src: 'thailand_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -7.43,  targetTop: 34.41,  targetWidth: 80.6, targetHeight: 69.3, targetRotate: 0 },
+                    { id: 5, src: 'thailand_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 34.55,  targetTop: 37.34,  targetWidth: 67.7, targetHeight: 65.6, targetRotate: 0 },
+                    { id: 6, src: 'thailand_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -53.02, targetTop: 72.46,  targetWidth: 72.5, targetHeight: 59.2, targetRotate: 0 },
+                    { id: 7, src: 'thailand_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -2.57,  targetTop: 78.91,  targetWidth: 65.0, targetHeight: 56.6, targetRotate: 0 },
+                    { id: 8, src: 'thailand_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 33.36,  targetTop: 75.35,  targetWidth: 70.3, targetHeight: 58.46, targetRotate: 0 }
+                ]
+            },
+            '东帝汶': {
+                bgImg: 'timor_leste_bg.jpg',
+                fullPuzzleImg: 'timor_leste_full.jpg',
+                elementCnImg: 'timor_leste_elements_cn.png',
+                elementEnImg: 'timor_leste_elements_en.png',
+                storyCnImg: 'timor_leste_story_cn.png',
+                storyEnImg: 'timor_leste_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/timor_leste_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'timor_leste_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -51.77, targetTop: -11.62, targetWidth: 79.5, targetHeight: 64.6, targetRotate: 0 },
+                    { id: 1, src: 'timor_leste_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -5.75,  targetTop: -15.43, targetWidth: 82.8, targetHeight: 65.2, targetRotate: 0 },
+                    { id: 2, src: 'timor_leste_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 36.23,  targetTop: -20.92, targetWidth: 73.1, targetHeight: 79.5, targetRotate: 0 },
+                    { id: 3, src: 'timor_leste_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -56.46, targetTop: 24.47,  targetWidth: 79.3, targetHeight: 74.1, targetRotate: 0 },
+                    { id: 4, src: 'timor_leste_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -12.81, targetTop: 29.22,  targetWidth: 89.0, targetHeight: 70.9, targetRotate: 0 },
+                    { id: 5, src: 'timor_leste_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 37.49,  targetTop: 27.16,  targetWidth: 60.8, targetHeight: 79.5, targetRotate: 0 },
+                    { id: 6, src: 'timor_leste_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -57.27, targetTop: 78.57,  targetWidth: 73.5, targetHeight: 59.2, targetRotate: 0 },
+                    { id: 7, src: 'timor_leste_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -9.98,  targetTop: 77.83,  targetWidth: 71.9, targetHeight: 66.2, targetRotate: 0 },
+                    { id: 8, src: 'timor_leste_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 40.22,  targetTop: 77.20,  targetWidth: 55.8, targetHeight: 58.46, targetRotate: 0 }
+                ]
+            },
+            '越南': {
+                bgImg: 'vietnam_bg.jpg',
+                fullPuzzleImg: 'vietnam_full.jpg',
+                elementCnImg: 'vietnam_elements_cn.png',
+                elementEnImg: 'vietnam_elements_en.png',
+                storyCnImg: 'vietnam_story_cn.png',
+                storyEnImg: 'vietnam_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/vietnam_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'vietnam_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -48.25, targetTop: -9.58,  targetWidth: 67.3, targetHeight: 66.6, targetRotate: 0 },
+                    { id: 1, src: 'vietnam_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -5.00,  targetTop: -4.87,  targetWidth: 62.8, targetHeight: 68.1, targetRotate: 0 },
+                    { id: 2, src: 'vietnam_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 35.11,  targetTop: -5.54,  targetWidth: 62.0, targetHeight: 66.4, targetRotate: 0 },
+                    { id: 3, src: 'vietnam_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -46.64, targetTop: 20.02,  targetWidth: 65.4, targetHeight: 78.9, targetRotate: 0 },
+                    { id: 4, src: 'vietnam_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -14.46, targetTop: 35.34,  targetWidth: 75.3, targetHeight: 58.8, targetRotate: 0 },
+                    { id: 5, src: 'vietnam_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 37.34,  targetTop: 38.44,  targetWidth: 56.2, targetHeight: 52.7, targetRotate: 0 },
+                    { id: 6, src: 'vietnam_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -48.21, targetTop: 64.13,  targetWidth: 68.9, targetHeight: 68.1, targetRotate: 0 },
+                    { id: 7, src: 'vietnam_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -2.57,  targetTop: 70.40,  targetWidth: 59.62, targetHeight: 58.8, targetRotate: 0 },
+                    { id: 8, src: 'vietnam_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 24.85,  targetTop: 75.91,  targetWidth: 75.9, targetHeight: 51.9, targetRotate: 0 }
+                ]
+            },
+            '广西': {
+                bgImg: 'guangxi_bg.jpg',
+                fullPuzzleImg: 'guangxi_full.jpg',
+                elementCnImg: 'guangxi_elements_cn.png',
+                elementEnImg: 'guangxi_elements_en.png',
+                storyCnImg: 'guangxi_story_cn.png',
+                storyEnImg: 'guangxi_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/guangxi_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'guangxi_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -53.43, targetTop: -14.02, targetWidth: 70.7, targetHeight: 70.7, targetRotate: 0 },
+                    { id: 1, src: 'guangxi_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -13.53, targetTop: -9.50,  targetWidth: 69.3, targetHeight: 75.3, targetRotate: 0 },
+                    { id: 2, src: 'guangxi_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 35.12,  targetTop: -24.99, targetWidth: 65.0, targetHeight: 93.2, targetRotate: 0 },
+                    { id: 3, src: 'guangxi_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -55.70, targetTop: 22.06,  targetWidth: 86.0, targetHeight: 79.7, targetRotate: 0 },
+                    { id: 4, src: 'guangxi_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -3.73,  targetTop: 26.26,  targetWidth: 65.0, targetHeight: 78.9, targetRotate: 0 },
+                    { id: 5, src: 'guangxi_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 23.64,  targetTop: 29.19,  targetWidth: 82.2, targetHeight: 78.1, targetRotate: 0 },
+                    { id: 6, src: 'guangxi_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -47.27, targetTop: 74.68,  targetWidth: 65.98, targetHeight: 49.62, targetRotate: 0 },
+                    { id: 7, src: 'guangxi_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -2.38,  targetTop: 71.50,  targetWidth: 66.6, targetHeight: 71.7, targetRotate: 0 },
+                    { id: 8, src: 'guangxi_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 15.41,  targetTop: 58.13,  targetWidth: 89.6, targetHeight: 94.7, targetRotate: 0 }
+                ]
+            },
+            '老挝': {
+                bgImg: 'laos_bg.jpg',
+                fullPuzzleImg: 'laos_full.jpg',
+                elementCnImg: 'laos_elements_cn.png',
+                elementEnImg: 'laos_elements_en.png',
+                storyCnImg: 'laos_story_cn.png',
+                storyEnImg: 'laos_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/laos_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'laos_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -51.96, targetTop: -15.14, targetWidth: 82.4, targetHeight: 72.9, targetRotate: 0 },
+                    { id: 1, src: 'laos_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -6.11,  targetTop: -5.25,  targetWidth: 66.6, targetHeight: 51.9, targetRotate: 0 },
+                    { id: 2, src: 'laos_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 23.46,  targetTop: -4.25,  targetWidth: 74.5, targetHeight: 54.2, targetRotate: 0 },
+                    { id: 3, src: 'laos_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -39.23, targetTop: 23.91,  targetWidth: 67.15, targetHeight: 67.9, targetRotate: 0 },
+                    { id: 4, src: 'laos_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -7.24,  targetTop: 27.56,  targetWidth: 70.1, targetHeight: 59.6, targetRotate: 0 },
+                    { id: 5, src: 'laos_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 21.95,  targetTop: 26.79,  targetWidth: 93.0, targetHeight: 64.0, targetRotate: 0 },
+                    { id: 6, src: 'laos_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -37.08, targetTop: 66.17,  targetWidth: 59.4, targetHeight: 55.4, targetRotate: 0 },
+                    { id: 7, src: 'laos_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -8.68,  targetTop: 72.62,  targetWidth: 74.5, targetHeight: 54.2, targetRotate: 0 },
+                    { id: 8, src: 'laos_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 40.95,  targetTop: 58.87,  targetWidth: 66.6, targetHeight: 79.5, targetRotate: 0 }
+                ]
+            },
+            '马来西亚': {
+                bgImg: 'malaysia_bg.jpg',
+                fullPuzzleImg: 'malaysia_full.jpg',
+                elementCnImg: 'malaysia_elements_cn.png',
+                elementEnImg: 'malaysia_elements_en.png',
+                storyCnImg: 'malaysia_story_cn.png',
+                storyEnImg: 'malaysia_story_en.png',
+                videoUrl: 'https://github.com/schappertsabeiha-art/game-videos2/releases/download/%E8%A7%86%E9%A2%91/malaysia_eco_story.mp4',
+                dashedBox: { width: 745, height: 730, left: 7.5, top: 9.5 },
+                pieces: [
+                    { id: 0, src: 'malaysia_piece_0.png', initLeft: 71.5, initTop: 4.0,  initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -51.58, targetTop: -9.40,  targetWidth: 79.5, targetHeight: 64.6, targetRotate: 0 },
+                    { id: 1, src: 'malaysia_piece_1.png', initLeft: 71.5, initTop: 23.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -17.23, targetTop: -16.17, targetWidth: 82.8, targetHeight: 68.7, targetRotate: 0 },
+                    { id: 2, src: 'malaysia_piece_2.png', initLeft: 85.5, initTop: 70.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 39.75,  targetTop: -7.39,  targetWidth: 71.3, targetHeight: 63.8, targetRotate: 0 },
+                    { id: 3, src: 'malaysia_piece_3.png', initLeft: 71.5, initTop: 42.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -54.05, targetTop: 27.44,  targetWidth: 76.1, targetHeight: 74.1, targetRotate: 0 },
+                    { id: 4, src: 'malaysia_piece_4.png', initLeft: 71.5, initTop: 61.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -16.14, targetTop: 34.22,  targetWidth: 89.0, targetHeight: 70.9, targetRotate: 0 },
+                    { id: 5, src: 'malaysia_piece_5.png', initLeft: 71.5, initTop: 80.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 31.02,  targetTop: 31.98,  targetWidth: 84.6, targetHeight: 76.9, targetRotate: 0 },
+                    { id: 6, src: 'malaysia_piece_6.png', initLeft: 85.5, initTop: 50.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -48.94, targetTop: 75.79,  targetWidth: 73.5, targetHeight: 59.2, targetRotate: 0 },
+                    { id: 7, src: 'malaysia_piece_7.png', initLeft: 85.5, initTop: 30.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: -15.35, targetTop: 70.41,  targetWidth: 75.7, targetHeight: 58.4, targetRotate: 0 },
+                    { id: 8, src: 'malaysia_piece_8.png', initLeft: 85.5, initTop: 10.0, initWidth: 148, initHeight: 148, initRotate: 0, targetLeft: 28.37,  targetTop: 72.39,  targetWidth: 68.7, targetHeight: 58.46, targetRotate: 0 }
+                ]
+            }
+        };
+
+        const menuScreen = document.getElementById('main-menu-screen');
+        const hubScreen = document.getElementById('puzzle-science-screen');
+        const videoScreen = document.getElementById('video-screen');
+        const victoryModal = document.getElementById('victory-modal');
+        const gameVideo = document.getElementById('game-video');
+        const videoLoadingTip = document.getElementById('video-loading-tip');
+        const stageArea = document.getElementById('stage-area');
+        const dashedBox = document.getElementById('dashed-box');
+        const innerMount = document.getElementById('inner-puzzle-mount');
+
+        let currentActiveKey = '';
+        let completedPiecesCount = 0;
+        let activePieceList = [];
+
+        function enterLevel(countryKey) {
+            currentActiveKey = countryKey;
+            const data = gameData[countryKey];
+            if (!data) return;
+
+            // 🛑 进关卡强制物理释放上一个视频，不预加载视频，彻底根除音频残留
+            destroyActiveVideo();
+
+            hubScreen.style.backgroundImage = `
+                radial-gradient(circle at 60% 45%, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.45) 100%),
+                url('${data.bgImg}')
+            `;
+
+            document.getElementById('card-ref-img').src = data.fullPuzzleImg;
+            document.getElementById('card-elem-cn-img').src = data.elementCnImg;
+            document.getElementById('card-elem-en-img').src = data.elementEnImg;
+            document.getElementById('card-story-cn-img').src = data.storyCnImg;
+            document.getElementById('card-story-en-img').src = data.storyEnImg;
+
+            document.getElementById('victory-preview-img').src = data.fullPuzzleImg;
+
+            victoryModal.classList.remove('show');
+            completedPiecesCount = 0;
+            activePieceList = data.pieces;
+
+            activePieceList.forEach(p => {
+                p.realWidthPx = Math.round((p.targetWidth / 100) * BASE_MOUNT_SIZE);
+                p.realHeightPx = Math.round((p.targetHeight / 100) * BASE_MOUNT_SIZE);
+            });
+
+            dashedBox.style.width = `${data.dashedBox.width}px`;
+            dashedBox.style.height = `${data.dashedBox.height}px`;
+            dashedBox.style.left = `${data.dashedBox.left}%`;
+            dashedBox.style.top = `${data.dashedBox.top}%`;
+
+            initGamePieces(activePieceList);
+
+            menuScreen.style.display = 'none';
+            hubScreen.style.display = 'flex';
+        }
+
+        function initGamePieces(pieces) {
+            const oldCards = stageArea.querySelectorAll('.puzzle-piece-node');
+            oldCards.forEach(c => c.remove());
+            innerMount.innerHTML = '';
+
+            pieces.forEach((p) => {
+                const card = document.createElement('div');
+                card.className = 'puzzle-piece-node';
+                card.id = `piece-node-${p.id}`;
+                card.draggable = true;
+                
+                card.style.left = `${p.initLeft}%`;
+                card.style.top = `${p.initTop}%`;
+                card.style.width = `${p.initWidth}px`;
+                card.style.height = `${p.initHeight}px`;
+                card.style.transform = `rotate(${p.initRotate}deg)`;
+
+                card.innerHTML = `<img src="${p.src}" loading="lazy" decoding="async">`;
+
+                card.ondragstart = (e) => {
+                    e.dataTransfer.setData('text/plain', p.id);
+                    const rect = card.getBoundingClientRect();
+                    e.dataTransfer.setData('offsetX', e.clientX - rect.left);
+                    e.dataTransfer.setData('offsetY', e.clientY - rect.top);
+                };
+
+                stageArea.appendChild(card);
+            });
+        }
+
+        function handleStageDragOver(e) {
+            e.preventDefault();
+            dashedBox.classList.add('drag-hover');
+        }
+
+        function handleStageDragLeave(e) {
+            dashedBox.classList.remove('drag-hover');
+        }
+
+        function handleStageDrop(e) {
+            e.preventDefault();
+            dashedBox.classList.remove('drag-hover');
+
+            const pieceId = parseInt(e.dataTransfer.getData('text/plain'));
+            if (isNaN(pieceId)) return;
+
+            const config = activePieceList.find(p => p.id === pieceId);
+            const pieceElement = document.getElementById(`piece-node-${pieceId}`);
+            if (!config || !pieceElement || pieceElement.classList.contains('locked')) return;
+
+            const mountRect = innerMount.getBoundingClientRect();
+            const stageRect = stageArea.getBoundingClientRect();
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+
+            const dropLeftInMountPercent = ((mouseX - (config.realWidthPx / 2) - mountRect.left) / mountRect.width) * 100;
+            const dropTopInMountPercent = ((mouseY - (config.realHeightPx / 2) - mountRect.top) / mountRect.height) * 100;
+
+            const targetLeft = config.targetLeft;
+            const targetTop = config.targetTop;
+
+            const distX = Math.abs(dropLeftInMountPercent - targetLeft);
+            const distY = Math.abs(dropTopInMountPercent - targetTop);
+
+            if (distX <= 25 && distY <= 25) {
+                innerMount.appendChild(pieceElement);
+                pieceElement.style.position = 'absolute';
+                pieceElement.style.left = `${config.targetLeft}%`;
+                pieceElement.style.top = `${config.targetTop}%`;
+                pieceElement.style.width = `${config.targetWidth}%`;
+                pieceElement.style.height = `${config.targetHeight}%`;
+                pieceElement.style.transform = `rotate(${config.targetRotate}deg)`;
+                pieceElement.draggable = false;
+                pieceElement.classList.add('locked');
+
+                completedPiecesCount++;
+                if (completedPiecesCount === activePieceList.length) {
+                    setTimeout(showVictoryModal, 450);
+                }
+            } else {
+                stageArea.appendChild(pieceElement);
+                pieceElement.style.position = 'absolute';
+                pieceElement.style.left = `${mouseX - (config.realWidthPx / 2) - stageRect.left}px`;
+                pieceElement.style.top = `${mouseY - (config.realHeightPx / 2) - stageRect.top}px`;
+                pieceElement.style.width = `${config.realWidthPx}px`;
+                pieceElement.style.height = `${config.realHeightPx}px`;
+                pieceElement.style.transform = `rotate(${config.targetRotate}deg)`;
+            }
+        }
+
+        function showVictoryModal() {
+            victoryModal.classList.add('show');
+        }
+
+        // 🎯 核心改造：点击观看才挂载流并播放
+        function startVideoPlayback() {
+            victoryModal.classList.remove('show');
+            const targetVideoUrl = gameData[currentActiveKey].videoUrl;
+
+            // 动态挂载
+            gameVideo.src = targetVideoUrl;
+            gameVideo.muted = false; // 正式发声
+
+            hubScreen.style.display = 'none';
+            videoScreen.style.display = 'flex';
+            videoLoadingTip.style.display = 'flex';
+
+            if (videoScreen.requestFullscreen) {
+                videoScreen.requestFullscreen().catch(() => {});
+            }
+
+            const playPromise = gameVideo.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    videoLoadingTip.style.display = 'none';
+                }).catch(() => {
+                    gameVideo.oncanplay = () => {
+                        videoLoadingTip.style.display = 'none';
+                        gameVideo.play().catch(() => {});
+                    };
+                });
+            }
+        }
+
+        gameVideo.onplaying = () => {
+            videoLoadingTip.style.display = 'none';
+        };
+
+        // 视频正常播完后自动断开
+        gameVideo.onended = () => {
+            destroyActiveVideo();
+        };
+
+        // 🛑 核心销毁函数：物理级切断音频流，释放内存
+        function destroyActiveVideo() {
+            try {
+                gameVideo.pause();
+                gameVideo.muted = true;
+                gameVideo.currentTime = 0;
+                gameVideo.removeAttribute('src'); // 移除引用
+                gameVideo.load(); // 强制浏览器解码器垃圾回收
+            } catch(e) {}
+            videoLoadingTip.style.display = 'none';
+        }
+
+        function closeVideoWindow() {
+            destroyActiveVideo();
+
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {});
+            }
+
+            videoScreen.style.display = 'none';
+            menuScreen.style.display = 'flex';
+        }
+
+        function backToMenu() {
+            destroyActiveVideo();
+            hubScreen.style.display = 'none';
+            menuScreen.style.display = 'flex';
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && videoScreen.style.display === 'flex') {
+                closeVideoWindow();
+            }
+        });
+    </script>
+</body>
+</html>
